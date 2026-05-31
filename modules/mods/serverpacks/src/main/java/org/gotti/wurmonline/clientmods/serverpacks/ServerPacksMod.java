@@ -141,9 +141,10 @@ public class ServerPacksMod implements WurmClientMod, Initable, PreInitable, Con
 						int n = reader.readInt();
 						while (n-- > 0) {
 							String packId = reader.readUTF();
+							String version = reader.readUTF();
 							String uri = reader.readUTF();
-							logger.log(Level.INFO, String.format("Got server pack %s (%s)", packId, uri));
-							installServerPack(packId, uri);
+							logger.log(Level.INFO, String.format("Got server pack %s v%s (%s)", packId, version, uri));
+							installServerPack(packId, version, uri);
 						}
 						refreshModels();
 					} catch (IOException e) {
@@ -184,11 +185,16 @@ public class ServerPacksMod implements WurmClientMod, Initable, PreInitable, Con
 		}
 	}
 	
+	// Manual console install: no announced version, so always (re)download.
 	private void installServerPack(String packId, String packUri) {
+		installServerPack(packId, null, packUri);
+	}
+
+	private void installServerPack(String packId, String version, String packUri) {
 		try {
 			URL packUrl = new URL(packUri);
 			boolean force = Boolean.parseBoolean(splitQuery(packUrl).getOrDefault("force", emptyList()).stream().map(v -> v == null ? "true" : v).reduce((a, b) -> b).orElse("false"));
-			if (force || !checkForExistingPack(packId)) {
+			if (force || !checkForCurrentPack(packId, version)) {
 				downloadPack(packUrl, packId);
 			} else {
 				enableDownloadedPack(packId, packUrl);
@@ -253,12 +259,38 @@ public class ServerPacksMod implements WurmClientMod, Initable, PreInitable, Con
 		new Thread(downloader).start();
 	}
 
-	private boolean checkForExistingPack(String packId) {
+	private boolean checkForCurrentPack(String packId, String version) {
 		Path path = Paths.get("packs", getPackName(packId));
-		if (Files.isRegularFile(path)) {
-			return true;
+		if (!Files.isRegularFile(path)) {
+			return false;
 		}
-		return false;
+		// The pack is "current" only if the version stored in its pack.json matches the
+		// version the server announced. This is what lets an updated pack (same id/filename)
+		// be re-downloaded in place without orphaning old files.
+		return version != null && version.equals(readPackVersion(path));
+	}
+
+	private String readPackVersion(Path jarPath) {
+		try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(jarPath.toFile())) {
+			java.util.zip.ZipEntry entry = zip.getEntry("pack.json");
+			if (entry == null) {
+				return null;
+			}
+			try (java.io.InputStream is = zip.getInputStream(entry)) {
+				java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+				byte[] buf = new byte[4096];
+				int r;
+				while ((r = is.read(buf)) != -1) {
+					bos.write(buf, 0, r);
+				}
+				String json = new String(bos.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+				java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"version\"\\s*:\\s*\"?([^\",}\\s]+)\"?").matcher(json);
+				return m.find() ? m.group(1) : null;
+			}
+		} catch (IOException e) {
+			logger.log(Level.WARNING, "Could not read version from pack " + jarPath + ": " + e.getMessage());
+			return null;
+		}
 	}
 
 	private String getPackName(String packId) {
