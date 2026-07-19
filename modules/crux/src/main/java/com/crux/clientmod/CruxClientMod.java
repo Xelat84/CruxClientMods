@@ -18,6 +18,7 @@ import org.gotti.wurmonline.clientmods.maxactions.MaxActions;
 import org.gotti.wurmonline.clientmods.recipeexamine.RecipeExamine;
 import org.gotti.wurmonline.clientmods.stackplacement.StackPlacement;
 import org.gotti.wurmonline.clientmods.wideskillcolumn.WideSkillColumn;
+import org.gotti.wurmonline.clientmods.wideweightcolumn.WideWeightColumn;
 
 public class CruxClientMod implements WurmClientMod, Configurable, PreInitable, Initable, ConsoleListener {
 
@@ -35,6 +36,7 @@ public class CruxClientMod implements WurmClientMod, Configurable, PreInitable, 
 		delegates.add(new RecipeExamine());
 		delegates.add(new StackPlacement());
 		delegates.add(new WideSkillColumn());
+		delegates.add(new WideWeightColumn());
 	}
 
 	// Load-time phases are all-or-nothing: if any bundled mod fails, abort the whole load so the client
