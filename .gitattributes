@@ -5,3 +5,7 @@
 
 *.sh text eol=lf
 
+# In-project Maven repo under repo/: jars are binary and must never be line-ending normalized
+# (that would corrupt them and break their committed .sha1/.md5 checksums).
+*.jar binary
+

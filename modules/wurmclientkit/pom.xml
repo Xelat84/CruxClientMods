@@ -1,0 +1,46 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<artifactId>wurmclientkit</artifactId>
+	<packaging>jar</packaging>
+
+	<name>wurmclientkit</name>
+
+	<parent>
+		<groupId>org.gotti.wurmunlimited</groupId>
+		<artifactId>client-modlauncher-parent</artifactId>
+		<version>0.17-SNAPSHOT</version>
+		<relativePath>../..</relativePath>
+	</parent>
+
+	<!--
+	  Reusable client-mod SDK: custom server<->client command routing (ServerCommandMod), big-endian
+	  packet (de)serialization (PacketWriter/PacketReader) and the GUI component kit. This is a LIBRARY
+	  (no `classname` entry point) - the crux module shades it into crux-clientmod.jar, so it ships no
+	  mod descriptor and no drop-in assembly of its own.
+	-->
+	<dependencies>
+		<dependency>
+			<groupId>org.gotti.wurmunlimited</groupId>
+			<artifactId>client-modlauncher</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.gotti.wurmunlimited</groupId>
+			<artifactId>client</artifactId>
+			<version>3721782</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gotti.wurmunlimited</groupId>
+			<artifactId>common-client</artifactId>
+			<version>3721782</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>${project.artifactId}-${project.version}</finalName>
+	</build>
+</project>

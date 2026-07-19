@@ -3,7 +3,7 @@
 
 	<groupId>org.gotti.wurmunlimited</groupId>
 	<artifactId>client-modlauncher-parent</artifactId>
-	<version>0.15</version>
+	<version>0.17-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>client modlauncher parent</name>
@@ -14,6 +14,8 @@
 		<module>modules/mods/connectionfix</module>
 		<module>modules/mods/custommap</module>
 		<module>modules/mods/serverpacks</module>
+		<module>modules/wurmclientkit</module>
+		<module>modules/crux</module>
 		<module>modules/dist</module>
 	</modules>
 
@@ -23,52 +25,37 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
 
+	<!--
+	  In-project Maven repository (committed under repo/). Holds the two signature-only WU client stubs
+	  (client / common-client 3721782) and the prebuilt modloader-shared 0.18 jar, so the whole reactor
+	  builds with zero external hosts and zero secrets. maven.multiModuleProjectDirectory is the reactor
+	  root and stays constant for every child module (unlike project.basedir). Everything else (javassist,
+	  assembly/shade plugins, ...) still resolves from Maven Central.
+	-->
 	<repositories>
 		<repository>
-			<id>gotti-no-ip-org-ssh-repository</id>
-			<url>http://gotti.no-ip.org/maven/repository</url>
+			<id>project-local</id>
+			<name>In-project client stubs + modloader-shared</name>
+			<url>file:///${maven.multiModuleProjectDirectory}/repo</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
 		</repository>
 	</repositories>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>gotti-no-ip-org-ssh-repository</id>
-			<url>scp://gotti.no-ip.org/srv/maven/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>gotti-no-ip-org-ssh-repository</id>
-			<url>scp://gotti.no-ip.org/srv/maven/repository</url>
-		</repository>
-	</distributionManagement>
-
 	<scm>
-		<connection>scm:git:https://github.com/ago1024/WurmClientModLauncher.git</connection>
-		<developerConnection>scm:git:git@github.com:ago1024/WurmClientModLauncher.git</developerConnection>
-		<url>https://github.com/ago1024/WurmClientModLauncher</url>
+		<connection>scm:git:https://github.com/Xelat84/CruxClientMods.git</connection>
+		<developerConnection>scm:git:git@github.com:Xelat84/CruxClientMods.git</developerConnection>
+		<url>https://github.com/Xelat84/CruxClientMods</url>
 		<tag>HEAD</tag>
 	</scm>
 
 	<build>
-		<extensions>
-			<!-- Enabling the use of SSH -->
-			<extension>
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-ssh</artifactId>
-				<version>3.4.1</version>
-			</extension>
-		</extensions>
-
 		<plugins>
 			<plugin>
-				<artifactId>maven-release-plugin</artifactId>
-				<version>2.5.3</version>
-				<configuration>
-					<tagNameFormat>v@{project.version}</tagNameFormat>
-					<arguments>-Dmaven.javadoc.skip=true</arguments>
-				</configuration>
-			</plugin>
-			<plugin>
-				
 				<groupId>ru.concerteza.buildnumber</groupId>
 				<artifactId>maven-jgit-buildnumber-plugin</artifactId>
 				<version>1.2.9</version>

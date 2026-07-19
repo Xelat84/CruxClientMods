@@ -15,3 +15,6 @@ beta
 pom.xml.versionsBackup
 *~
 .*.swp
+
+.idea/
+RELEASE_NOTES.md

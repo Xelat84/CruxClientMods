@@ -3,50 +3,71 @@ name: Release
 on:
   push:
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'v*'          # e.g. v0.16, v1.0.0
+  workflow_dispatch:  # manual build (no release unless run on a tag)
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+permissions:
+  contents: write     # required for softprops/action-gh-release to create the release
 
 jobs:
-  build:
-
+  release:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v5
         with:
-          lfs: true
-          fetch-depth: 0
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
+          fetch-depth: 0            # full history so maven-jgit-buildnumber-plugin can read the tag
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v5
         with:
-          java-version: 1.8
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
-      - name: Get version
-        id: get_version
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+
+      - name: Determine version
+        id: version
         run: |
-          VERSION=$(mvn -B --file pom.xml org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "::set-output name=version::$VERSION"
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            VERSION="$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)"
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $VERSION"
+
+      - name: Stamp version
+        run: mvn -B versions:set -DnewVersion=${{ steps.version.outputs.version }} -DprocessAllModules -DgenerateBackupPoms=false
+
+      - name: Build
+        run: mvn -B clean install -DskipTests
+
+      - name: Release notes body
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          : > RELEASE_NOTES.md   # always exists (empty when CHANGELOG has no matching section)
+          if [[ -f CHANGELOG.md ]]; then
+            awk -v v="$V" '
+              /^## / { if (grab) exit; if (index($0, v)) { grab=1; next } }
+              grab { print }
+            ' CHANGELOG.md > RELEASE_NOTES.md || true
+          fi
+
+      - name: Create release
+        if: steps.version.outputs.is_release == 'true'
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Version ${{ steps.get_version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          name: Version ${{ steps.version.outputs.version }}
           draft: false
-          prerelease: true
-      - name: Upload release assets
-        run: |
-          set -x
-          assets=()
-          for asset in modules/dist/target/dist-${{ steps.get_version.outputs.version }}/*-${{ steps.get_version.outputs.version }}.zip; do
-            assets+=("-a" "$asset")
-          done
-          tag_name="${GITHUB_REF##*/}"
-          hub release edit "${assets[@]}" -m "" "$tag_name"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          # Curated CHANGELOG section (if any) as the body, plus auto-generated "What's Changed".
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            modules/dist/target/client-modlauncher-${{ steps.version.outputs.version }}.zip
+            modules/crux/target/crux-clientmod-${{ steps.version.outputs.version }}.zip
+            modules/crux/target/crux-clientmod.jar

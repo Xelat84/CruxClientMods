@@ -1,0 +1,129 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.crux.clientmod</groupId>
+	<artifactId>crux-clientmod</artifactId>
+	<packaging>jar</packaging>
+
+	<name>crux-clientmod</name>
+
+	<parent>
+		<groupId>org.gotti.wurmunlimited</groupId>
+		<artifactId>client-modlauncher-parent</artifactId>
+		<version>0.17-SNAPSHOT</version>
+		<relativePath>../..</relativePath>
+	</parent>
+
+	<!--
+	  Consolidated client mod: bundles every custom client mod into one jar under one modloader
+	  descriptor via composite delegation (com.crux.clientmod.CruxClientMod). wurmclientkit is shaded
+	  in so the mod ships as a single self-contained jar.
+	-->
+	<dependencies>
+		<!-- Reusable client-mod SDK (tabs, form controls, tree items + cell buttons, packet codec, server-command
+		     routing). Shaded into crux-clientmod.jar below so the single jar stays self-contained. -->
+		<dependency>
+			<groupId>org.gotti.wurmunlimited</groupId>
+			<artifactId>wurmclientkit</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.gotti.wurmunlimited</groupId>
+			<artifactId>client-modlauncher</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.gotti.wurmunlimited</groupId>
+			<artifactId>client</artifactId>
+			<version>3721782</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.gotti.wurmunlimited</groupId>
+			<artifactId>common-client</artifactId>
+			<version>3721782</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>${project.name}</finalName>
+		<plugins>
+			<!-- Fold ONLY the WurmClientKit classes into crux-clientmod.jar so the mod ships as one self-contained
+			     jar (classpath=crux-clientmod.jar unchanged). Declared before the assembly plugin so the shaded jar
+			     is what the assembly zips. -->
+			<plugin>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.4.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<artifactSet>
+								<includes>
+									<include>org.gotti.wurmunlimited:wurmclientkit</include>
+								</includes>
+							</artifactSet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Bundle the mod descriptor inside the jar (META-INF auto-discovery). -->
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.0.2</version>
+				<inherited>true</inherited>
+				<executions>
+					<execution>
+						<id>copy-properties</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+							<overwrite>true</overwrite>
+							<useBuildFilters>false</useBuildFilters>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/src/dist</directory>
+									<targetPath>META-INF/org.gotti.wurmunlimited.modloader</targetPath>
+									<includes>
+										<include>${project.name}.properties</include>
+									</includes>
+									<filtering>true</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Package mods/crux-clientmod.properties + mods/crux-clientmod/crux-clientmod.jar into a drop-in zip. -->
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.7.1</version>
+				<configuration>
+					<descriptors>
+						<descriptor>src/assembly/mod-package.xml</descriptor>
+					</descriptors>
+					<finalName>${project.name}-${project.version}</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

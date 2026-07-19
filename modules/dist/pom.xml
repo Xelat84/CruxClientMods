@@ -9,20 +9,9 @@
 	<parent>
 		<groupId>org.gotti.wurmunlimited</groupId>
 		<artifactId>client-modlauncher-parent</artifactId>
-		<version>0.15</version>
+		<version>0.17-SNAPSHOT</version>
 		<relativePath>../..</relativePath>
 	</parent>
-
-	<pluginRepositories>
-		<pluginRepository>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-			<id>bintray-cy6ergn0m-maven</id>
-			<name>bintray-plugins</name>
-			<url>http://dl.bintray.com/cy6ergn0m/maven</url>
-		</pluginRepository>
-	</pluginRepositories>
 
 	<dependencies>
 		<dependency>
@@ -52,6 +41,12 @@
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>custommap</artifactId>
+			<type>zip</type>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.crux.clientmod</groupId>
+			<artifactId>crux-clientmod</artifactId>
 			<type>zip</type>
 			<version>${project.version}</version>
 		</dependency>
@@ -137,28 +132,6 @@
 					</execution>
 				</executions>
 
-			</plugin>
-
-			<plugin>
-				<groupId>cy.github</groupId>
-				<artifactId>github-release-plugin</artifactId>
-				<version>0.5.1</version>
-
-				<configuration>
-					<tagName>v${project.version}</tagName>
-					<releaseTitle>Version v${project.version}</releaseTitle>
-					<preRelease>true</preRelease>
-				</configuration>
-
-				<executions>
-					<execution>
-						<id>github-upload</id>
-						<goals>
-							<goal>gh-upload</goal>
-						</goals>
-						<phase>deploy</phase>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>
